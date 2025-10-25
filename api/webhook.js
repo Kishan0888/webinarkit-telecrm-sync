@@ -9,45 +9,39 @@ export default async function handler(req, res) {
 
   try {
     const data = req.body;
-    console.log("Received data from WebinarKit:", JSON.stringify(data, null, 2));
+    console.log("Received data from WebinarKit:", data);
 
-    // Map WebinarKit registration fields
-    const firstName = data.first || "";
-    const lastName = data.last || "";
-    const name = (firstName + " " + lastName).trim() || "Unknown";
+    // WebinarKit registration fields
+    const firstName = data.first || data.first_name || "";
+    const lastName = data.last || data.last_name || "";
+    const name = `${firstName} ${lastName}`.trim() || "Unknown";
 
-    const phone = (data.phoneCountryCode || "") + (data.phone || "");
-    const email = data.email || undefined;
+    const phone = data.phone || data.phone_number || "";
+    const email = data.email || "";
 
-    if (!phone) {
-      return res.status(400).json({ error: "Phone number missing" });
-    }
-
-    // TeleCRM API payload using exact API field names
-    const telecrmPayload = {
+    // TeleCRM payload
+    const payload = {
       fields: {
         full_name: name,
         phone_number: phone,
-        email: email,
-        status: "Fresh",
-      },
+        email: email || undefined,
+        status: "Fresh"
+      }
     };
 
-    const response = await fetch(
-      `https://api.telecrm.in/enterprise/${ENTERPRISE_ID}/autoupdatelead`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${TELECRM_TOKEN}`,
-        },
-        body: JSON.stringify(telecrmPayload),
-      }
-    );
+    // Send lead to TeleCRM Async API
+    const response = await fetch(`https://api.telecrm.in/enterprise/${ENTERPRISE_ID}/autoupdatelead`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${TELECRM_TOKEN}`
+      },
+      body: JSON.stringify(payload)
+    });
 
     if (response.ok) {
-      console.log(`✅ Lead synced successfully: ${name} - ${phone}`);
-      res.status(200).json({ success: true });
+      console.log(`✅ Lead synced: ${name} - ${phone}`);
+      res.status(200).json({ success: true, lead: { name, phone, email } });
     } else {
       const errText = await response.text();
       console.error("❌ Error syncing lead:", errText);
