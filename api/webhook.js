@@ -9,27 +9,44 @@ export default async function handler(req, res) {
 
   try {
     const data = req.body;
-    console.log("Received data from WebinarKit:", data);
+    console.log("Received data from WebinarKit:", JSON.stringify(data, null, 2));
 
-    const name = data.first || "Unknown";
-    const phone = (data.phoneCountryCode || "") + data.phone;
-    const email = data.email || "";
+    // Map WebinarKit registration fields
+    const firstName = data.first || "";
+    const lastName = data.last || "";
+    const name = (firstName + " " + lastName).trim() || "Unknown";
+
+    const phone = (data.phoneCountryCode || "") + (data.phone || "");
+    const email = data.email || undefined;
 
     if (!phone) {
       return res.status(400).json({ error: "Phone number missing" });
     }
 
-    const response = await fetch(`https://api.telecrm.in/enterprise/${ENTERPRISE_ID}/autoupdatelead`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${TELECRM_TOKEN}`,
+    // TeleCRM API payload using exact API field names
+    const telecrmPayload = {
+      fields: {
+        full_name: name,
+        phone_number: phone,
+        email: email,
+        status: "Fresh",
       },
-      body: JSON.stringify({ fields: { name, phone, email, status: "Fresh" } }),
-    });
+    };
+
+    const response = await fetch(
+      `https://api.telecrm.in/enterprise/${ENTERPRISE_ID}/autoupdatelead`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${TELECRM_TOKEN}`,
+        },
+        body: JSON.stringify(telecrmPayload),
+      }
+    );
 
     if (response.ok) {
-      console.log(`✅ Lead synced: ${name} - ${phone}`);
+      console.log(`✅ Lead synced successfully: ${name} - ${phone}`);
       res.status(200).json({ success: true });
     } else {
       const errText = await response.text();
