@@ -11,22 +11,30 @@ export default async function handler(req, res) {
     const data = req.body;
     console.log("Received data from WebinarKit:", data);
 
-    // WebinarKit registration fields
+    // WebinarKit registration fields mapping
     const firstName = data.first || data.first_name || "";
     const lastName = data.last || data.last_name || "";
     const name = `${firstName} ${lastName}`.trim() || "Unknown";
 
-    const phone = data.phone || data.phone_number || "";
-    const email = data.email || "";
+    // Phone number (required)
+    let phone = data.phone || data.phone_number || "";
+    if (phone && !phone.startsWith("+")) {
+      phone = "+91" + phone.replace(/\D/g, ""); // default India code
+    }
 
-    // TeleCRM payload
+    if (!phone) {
+      console.warn("⚠️ Phone number missing. Skipping lead.");
+      return res.status(400).json({ error: "Phone number is required" });
+    }
+
+    // TeleCRM payload (using exact API names from dashboard)
     const payload = {
       fields: {
-        full_name: name,
-        phone_number: phone,
-        email: email || undefined,
+        name: name,   // Name field in CRM
+        phone: phone, // Phone field in CRM
         status: "Fresh"
-      }
+      },
+      actions: [{}]
     };
 
     // Send lead to TeleCRM Async API
@@ -41,12 +49,13 @@ export default async function handler(req, res) {
 
     if (response.ok) {
       console.log(`✅ Lead synced: ${name} - ${phone}`);
-      res.status(200).json({ success: true, lead: { name, phone, email } });
+      res.status(200).json({ success: true, lead: { name, phone } });
     } else {
       const errText = await response.text();
       console.error("❌ Error syncing lead:", errText);
       res.status(500).json({ error: errText });
     }
+
   } catch (err) {
     console.error("⚠️ Server error:", err);
     res.status(500).json({ error: err.message });
