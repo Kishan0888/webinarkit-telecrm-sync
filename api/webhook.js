@@ -11,8 +11,15 @@ export default async function handler(req, res) {
     const data = req.body;
     console.log("Received data from WebinarKit:", data);
 
-    const name = data.name || data.full_name || "Unknown";
-    const phone = data.phone || data.phone_number;
+    // WebinarKit payload me registration object
+    const registration = data.registration || {};
+
+    const name = registration.first_name || registration.full_name || "Unknown";
+    const phone = registration.phone || registration.phone_number || "";
+
+    if (!phone) {
+      return res.status(400).json({ error: "Phone number missing" });
+    }
 
     // TeleCRM API call
     const response = await fetch(`https://api.telecrm.in/enterprise/${ENTERPRISE_ID}/autoupdatelead`, {
@@ -25,7 +32,7 @@ export default async function handler(req, res) {
     });
 
     if (response.ok) {
-      console.log("✅ Lead synced successfully to TeleCRM");
+      console.log(`✅ Lead synced successfully: ${name} - ${phone}`);
       res.status(200).json({ success: true });
     } else {
       const errText = await response.text();
