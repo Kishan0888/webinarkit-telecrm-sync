@@ -4,8 +4,8 @@ import fetch from "node-fetch";
 const TELECRM_TOKEN = "49435e22-c8a8-4023-93fe-8c3160b9b9281761398307986:179ae4d6-8115-4ef4-b5af-9562254d7db8";
 const ENTERPRISE_ID = "6402fe9688c27c000736d999";
 
-// Set workspace initial stage exactly as in TeleCRM
-const INITIAL_STAGE = "Initial Stage";
+// Mandatory status for Initial Stage
+const INITIAL_STATUS = "Just Curious";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
@@ -34,7 +34,7 @@ export default async function handler(req, res) {
         fields: {
           name,
           phone,
-          status: INITIAL_STAGE
+          status: INITIAL_STATUS
         },
         actions: [{}]
       }),
@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     const respText = await response.text();
 
     if (response.ok) {
-      console.log(`✅ Lead synced successfully to TeleCRM: ${name} - ${phone}`);
+      console.log(`✅ Lead synced successfully to TeleCRM: ${name} - ${phone} - Status: ${INITIAL_STATUS}`);
       res.status(200).json({ success: true, message: respText });
     } else {
       console.error("❌ Error syncing lead:", respText);
