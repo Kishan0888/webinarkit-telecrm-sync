@@ -1,20 +1,16 @@
-import express from "express";
+// api/webhook.js
 import fetch from "node-fetch";
 
-const app = express();
-app.use(express.json());
-
-// TeleCRM credentials
 const TELECRM_TOKEN = "49435e22-c8a8-4023-93fe-8c3160b9b9281761398307986:179ae4d6-8115-4ef4-b5af-9562254d7db8";
 const ENTERPRISE_ID = "6402fe9688c27c000736d999";
 
-// Webhook endpoint to receive WebinarKit registrations
-app.post("/webinarkit-to-telecrm", async (req, res) => {
+export default async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+
   try {
     const data = req.body;
     console.log("Received data from WebinarKit:", data);
 
-    // Adjust keys according to WebinarKit payload structure
     const name = data.name || data.full_name || "Unknown";
     const phone = data.phone || data.phone_number;
 
@@ -25,28 +21,19 @@ app.post("/webinarkit-to-telecrm", async (req, res) => {
         "Content-Type": "application/json",
         Authorization: `Bearer ${TELECRM_TOKEN}`,
       },
-      body: JSON.stringify({
-        fields: {
-          name,
-          phone,
-          status: "Fresh",
-        },
-      }),
+      body: JSON.stringify({ fields: { name, phone, status: "Fresh" } }),
     });
 
     if (response.ok) {
       console.log("✅ Lead synced successfully to TeleCRM");
-      res.status(200).send("Lead synced successfully");
+      res.status(200).json({ success: true });
     } else {
-      const errorText = await response.text();
-      console.error("❌ Error syncing lead:", errorText);
-      res.status(500).send("Error syncing lead");
+      const errText = await response.text();
+      console.error("❌ Error syncing lead:", errText);
+      res.status(500).json({ error: errText });
     }
   } catch (err) {
     console.error("⚠️ Server error:", err);
-    res.status(500).send("Server error");
+    res.status(500).json({ error: err.message });
   }
-});
-
-// Start server
-app.listen(3000, () => console.log("🚀 Webhook running on port 3000"));
+}
