@@ -1,8 +1,8 @@
 // api/webhook.js
 import fetch from "node-fetch";
 
-const TELECRM_TOKEN = "YOUR_TOKEN";
-const ENTERPRISE_ID = "YOUR_ENTERPRISE_ID";
+const TELECRM_TOKEN = "49435e22-c8a8-4023-93fe-8c3160b9b9281761398307986:179ae4d6-8115-4ef4-b5af-9562254d7db8";
+const ENTERPRISE_ID = "6402fe9688c27c000736d999";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
